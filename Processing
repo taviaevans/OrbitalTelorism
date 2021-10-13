@@ -1,6 +1,9 @@
 #!/bin/bash
 #  example for T2 images. If T1 then change all T2/t2 to T1/t1. 
 
+
+##EDIT FOR LOCAL
+
 #ID
 i=$1
 #loc where processing will happen
@@ -28,6 +31,8 @@ export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
 m=${i}_T2.nii ; f=mni_icbm152_t2_nlin_sym_09a.nii    # fixed and moving image file names
 #to test the registration can also use "fastfortestsing" below in mysetting
 mysetting=forproduction
+
+#DO NOT CHANGE [EXCEPT FOR t1/t2]
 
 
 if [[ ! -s $f ]] ; then echo no fixed $f ; exit; fi
