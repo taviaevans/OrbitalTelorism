@@ -1,0 +1,139 @@
+#!/bin/bash
+#  example for T2 images. If T1 then change all T2/t2 to T1/t1. 
+
+#ID
+i=$1
+#loc where processing will happen
+TDir=/
+#loc where T1/T2 nifti images are
+bbDir=/
+#loc where templates are
+PDir=/
+mkdir $TDir/${i}
+cd $TDir/${i}
+cp $bbDir/${i}/${i}_T2.nii $TDir/${i}/
+cp $PDir/atlas/mni_icbm152_t2_nlin_sym_09a.nii  $TDir/${i}/
+
+#Expote loc of FreeSurfer on Local space
+export FREESURFER_HOME=/*/freesurfer/6.0.0
+source ${FREESURFER_HOME}/SetUpFreeSurfer.sh
+
+module load fsl
+dim=3 # image dimensionality
+#use module load ANTs or direct to location of ANTs software
+AP="**/ANTs/bin/" # /home/yourself/code/ANTS/bin/bin/  # path to ANTs binaries
+ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=2  # controls multi-threading
+export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
+
+m=${i}_T2.nii ; f=mni_icbm152_t2_nlin_sym_09a.nii    # fixed and moving image file names
+#to test the registration can also use "fastfortestsing" below in mysetting
+mysetting=forproduction
+
+
+if [[ ! -s $f ]] ; then echo no fixed $f ; exit; fi
+if [[ ! -s $m ]] ; then echo no moving $m ;exit; fi
+if [[ ${#mysetting} -eq 0 ]] ; then
+echo usage is
+echo $0 fixed.nii.gz moving.nii.gz mysetting
+echo  where mysetting is either forproduction or fastfortesting
+exit
+fi
+nm1=` basename $f | cut -d '.' -f 1 `
+nm2=` basename $m | cut -d '.' -f 1 `
+reg=${AP}antsRegistration           # path to antsRegistration
+if [[ $mysetting == "fastfortesting" ]] ; then
+  its=10000x0x0
+  percentage=0.1
+  syn="100x0x0,0,5"
+else
+  its=10000x111110x11110
+  percentage=0.3
+  syn="100x100x50,-0.01,5"
+  mysetting=forproduction
+fi
+
+nm=${D}${nm1}_fixed_${nm2}_moving_setting_is_${mysetting}   # construct output prefix
+echo affine $m $f outname is $nm am using setting $mysetting 
+echo affine $m $f outname is $nm am using setting $mysetting `date` start >> report.txt
+
+$reg -d $dim -r [ $f, $m ,1]  \
+                        -m mattes[  $f, $m , 1 , 32, regular, $percentage ] \
+                         -t translation[ 0.1 ] \
+                         -c [$its,1.e-8,20]  \
+                        -s 4x2x1vox  \
+                        -f 6x4x2 -l 1 \
+                        -m mattes[  $f, $m , 1 , 32, regular, $percentage ] \
+                         -t rigid[ 0.1 ] \
+                         -c [$its,1.e-8,20]  \
+                        -s 4x2x1vox  \
+                        -f 3x2x1 -l 1 \
+                        -m mattes[  $f, $m , 1 , 32, regular, $percentage ] \
+                         -t affine[ 0.1 ] \
+                         -c [$its,1.e-8,20]  \
+                        -s 4x2x1vox  \
+                        -f 3x2x1 -l 1 \
+                        -m mattes[  $f, $m , 0.5 , 32 ] \
+                        -m cc[  $f, $m , 0.5 , 4 ] \
+                         -t SyN[ .20, 3, 0 ] \
+                         -c [ $syn ]  \
+                        -s 1x0.5x0vox  \
+                        -f 4x2x1 -l 1 -u 1 -z 1 \
+                       -o [${nm}]
+
+
+
+#back register the eye template to the native space using the outputs of above registration
+
+f=${i}_T2.nii m=mni_icbm152_t2_nlin_sym_09a.nii
+
+if [[ ! -s $f ]] ; then echo no fixed $f ; exit; fi
+if [[ ! -s $m ]] ; then echo no moving $m ;exit; fi
+if [[ ${#mysetting} -eq 0 ]] ; then
+echo usage is
+echo $0 fixed.nii.gz moving.nii.gz mysetting
+echo  where mysetting is either forproduction or fastfortesting
+exit
+fi
+if [[ $mysetting == "fastfortesting" ]] ; then
+  its=10000x0x0
+  percentage=0.1
+  syn="100x0x0,0,5"
+else
+  its=10000x111110x11110
+  percentage=0.3
+  syn="100x100x50,-0.01,5"
+  mysetting=forproduction
+fi
+
+
+
+nm1=` basename $f | cut -d '.' -f 1 `
+nm2=` basename $m | cut -d '.' -f 1 `
+
+nm=${D}${nm2}_fixed_${nm1}_moving_setting_is_${mysetting} # construct output prefix
+
+echo ${i} "step 2 reg eye mask to subject"
+${AP}WarpImageMultiTransform 3 $TDir/mni_icbm152_t2_tal_nlin_sym_09a_OS3_OD4_sphere.nii.gz ${nm1}_SyN_OS3_OD4_nn.nii -R ${f}   -i ${nm}0GenericAffine.mat --use-NN ${nm}1InverseWarp.nii.gz
+
+
+echo "step 3 calculate distance" 
+
+echo -n " ${nm1}_SyN_OS3_OD4_nn.nii " >> od4_prod.txt ; echo ${nm1}_SyN_OS3_OD4_nn.nii `fslstats ${nm1}_SyN_OS3_OD4_nn.nii -l 2.5 -u 3.5 -c` `fslstats ${nm1}_SyN_OS3_OD4_nn.nii -l 3.5 -u 4.5 -c` | awk -F " " '{print "sqrt ( (" $2 " - " $5 " )^2 + ( " $3 " - " $6 " )^2 + ( " $4 " - " $7 " )^2 )" }' | bc >> od4_prod.txt 
+
+echo -n " ${i} " >> od4_disc.txt 
+echo `fslstats ${i}_T2_SyN_OS3_OD4_nn.nii -l 2.5 -u 3.5 -v -w` `fslstats ${i}_T2_SyN_OS3_OD4_nn.nii -l 3.5 -u 4.5 -v -w`  >> od4_disc.txt 
+cat od4_prod.txt
+cat od4_disc.txt
+
+
+rm $TDir/${i}/mni_icbm152_t2_nlin_sym_09a.nii
+
+##QC calculate coords of the mask location
+
+cd ${TDir}/${i}
+echo ${i}
+fslmaths ${TDir}/${i}/${i}_T2.nii -mas ${TDir}/${i}/${i}_T2_SyN_OS3_OD4_nn.nii ${TDir}/${i}/${i}_masked.nii
+fslstats ${TDir}/${i}/${i}_masked.nii.gz -M
+echo -n "${i} " >> ${TDir}/${i}/QC_1.txt ; echo `fslstats ${TDir}/${i}/${i}_masked.nii.gz -M` >> ${TDir}/${i}/QC_1.txt  
+
+
