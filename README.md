@@ -10,13 +10,21 @@ The center of gravity is exported for each eyeball mask and the distance between
 
 The furtherst x,y,z coordinates are exported, and the min, max voxel value. These are used, along with the telorism distance to identify individuals where the processing has possibly failed to be manually checked (+/- 2 SD of these metrics). 
 
+For cognitive/variable analysis you need three files that correspond to your data: in list format in the file.
 
+* .dets
+which includes the determinants in your analysis 
+* .outs
+which includes the variables of analysis
+* .mods
+which includes the variables adjusted for in each model
+[example of * .mods file]
 
-
-
-
-
-
+"
+Age
+Age+Sex
+Age+Sex+Height
+"
 
 #for VBM processing pipeline please see https://github.com/roshchupkin/FSfslVBM
 
