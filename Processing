@@ -1,10 +1,10 @@
 #!/bin/bash
-#  example for T2 images. If T1 then change all T2/t2 to T1/t1. 
+#  example for T2 images. use hashed out options for T1 
 
 
 ##EDIT FOR LOCAL
 
-#ID
+#ID [ nifty file named "i".nii]
 i=$1
 #loc where processing will happen
 TDir=/
@@ -15,8 +15,11 @@ PDir=/
 mkdir $TDir/${i}
 cd $TDir/${i}
 cp $bbDir/${i}/${i}_T2.nii $TDir/${i}/
-cp $PDir/atlas/mni_icbm152_t2_nlin_sym_09a.nii  $TDir/${i}/
 
+cp $PDir/atlas/mni_icbm152_t2_nlin_sym_09a.nii  $TDir/${i}/
+#for T1 
+#$PDir/atlas/mniicbm152_t1_tal_nlin_sym_09a.nii  $TDir/${i}/
+# 
 #Expote loc of FreeSurfer on Local space
 export FREESURFER_HOME=/*/freesurfer/6.0.0
 source ${FREESURFER_HOME}/SetUpFreeSurfer.sh
@@ -28,7 +31,8 @@ AP="**/ANTs/bin/" # /home/yourself/code/ANTS/bin/bin/  # path to ANTs binaries
 ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=2  # controls multi-threading
 export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS
 
-m=${i}_T2.nii ; f=mni_icbm152_t2_nlin_sym_09a.nii    # fixed and moving image file names
+m=${i}.nii ; f=mni_icbm152_t2_nlin_sym_09a.nii    # fixed and moving image file names
+#m=${i}.nii ; f=mni_icbm152_t1_nlin_sym_09a.nii    # fixed and moving image file names
 #to test the registration can also use "fastfortestsing" below in mysetting
 mysetting=forproduction
 
@@ -89,8 +93,8 @@ $reg -d $dim -r [ $f, $m ,1]  \
 
 #back register the eye template to the native space using the outputs of above registration
 
-f=${i}_T2.nii m=mni_icbm152_t2_nlin_sym_09a.nii
-
+  f=${i}.nii m=mni_icbm152_t2_nlin_sym_09a.nii
+#   f=${i}.nii m=mni_icbm152_t2_nlin_sym_09a.nii
 if [[ ! -s $f ]] ; then echo no fixed $f ; exit; fi
 if [[ ! -s $m ]] ; then echo no moving $m ;exit; fi
 if [[ ${#mysetting} -eq 0 ]] ; then
@@ -126,7 +130,7 @@ echo "step 3 calculate distance"
 echo -n " ${nm1}_SyN_OS3_OD4_nn.nii " >> od4_prod.txt ; echo ${nm1}_SyN_OS3_OD4_nn.nii `fslstats ${nm1}_SyN_OS3_OD4_nn.nii -l 2.5 -u 3.5 -c` `fslstats ${nm1}_SyN_OS3_OD4_nn.nii -l 3.5 -u 4.5 -c` | awk -F " " '{print "sqrt ( (" $2 " - " $5 " )^2 + ( " $3 " - " $6 " )^2 + ( " $4 " - " $7 " )^2 )" }' | bc >> od4_prod.txt 
 
 echo -n " ${i} " >> od4_disc.txt 
-echo `fslstats ${i}_T2_SyN_OS3_OD4_nn.nii -l 2.5 -u 3.5 -v -w` `fslstats ${i}_T2_SyN_OS3_OD4_nn.nii -l 3.5 -u 4.5 -v -w`  >> od4_disc.txt 
+echo `fslstats ${i}_SyN_OS3_OD4_nn.nii -l 2.5 -u 3.5 -v -w` `fslstats ${i}_SyN_OS3_OD4_nn.nii -l 3.5 -u 4.5 -v -w`  >> od4_disc.txt 
 cat od4_prod.txt
 cat od4_disc.txt
 
@@ -137,7 +141,7 @@ rm $TDir/${i}/mni_icbm152_t2_nlin_sym_09a.nii
 
 cd ${TDir}/${i}
 echo ${i}
-fslmaths ${TDir}/${i}/${i}_T2.nii -mas ${TDir}/${i}/${i}_T2_SyN_OS3_OD4_nn.nii ${TDir}/${i}/${i}_masked.nii
+fslmaths ${TDir}/${i}/${i}.nii -mas ${TDir}/${i}/${i}_SyN_OS3_OD4_nn.nii ${TDir}/${i}/${i}_masked.nii
 fslstats ${TDir}/${i}/${i}_masked.nii.gz -M
 echo -n "${i} " >> ${TDir}/${i}/QC_1.txt ; echo `fslstats ${TDir}/${i}/${i}_masked.nii.gz -M` >> ${TDir}/${i}/QC_1.txt  
 
