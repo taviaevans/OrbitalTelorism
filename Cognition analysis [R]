@@ -1,0 +1,60 @@
+#Telorism with cognition
+
+
+#Load libraries
+library(data.table)
+library(foreign)
+library(GenABEL)
+library(stargazer) 
+#install.package("survival")
+library(survival)
+#install.packages("rms")
+library(rms)
+library(splines)
+#data and script load
+#User input
+#Your data
+
+analysis="**"
+datafile="**.sav"
+#datafile="**d.csv"
+modsfile="**.mods"
+detsfile="*.dets"
+outsfile="*.outs"
+
+fdata<-read.spss(datafile,to.data.frame=T)
+#fdata<-read.csv(datafile,header= TRUE, sep = ",")
+fdata$eid<-gsub(" ", "",fdata$id)
+
+models<-unlist(read.table(modsfile, header=F)) 
+dets<-unlist(read.table(detsfile, header=F)) 
+outs<-unlist(read.table(outsfile, header=F)) 
+
+coefs <- as.data.frame(matrix(NA,nrow=1,ncol=11))
+count<-0
+for (m in 1:length(models)){
+    for (o in outs){
+      count<-count+1
+      #Run regression 
+        fit<-lm(fdata,formula=paste(o,"~","Tel_Dist_Final+",models[m],sep=""))
+      #Save analysis details and coefficients
+      coefs[count,1] <- gsub(" ","_",Sys.time())
+      coefs[count,2] <- o
+      coefs[count,3] <- "Tel_Dist_Final" 
+      coefs[count,4] <- m
+      coefs[count,5] <- length(fit$fitted.values)
+      coefs[count,6:9] <- summary(fit)$coefficients[2,]
+      coefs[count,10:11]<-confint(fit)[2,]
+      if(m==2){
+        print(vif(fit))
+        print(summary(fit))
+        print(o)
+      }	
+    }
+  }
+
+colnames(coefs)<-c("time", "CogTest","Tel","model","number","Beta","SE","T","P","CIL","CIH")
+write.csv(coefs,file=paste("Results_",analysis,"*.csv",sep=""),row.names=F,quote=F)
+write.table(coefs,file=paste("Results_",analysis,"Telorism_*.txt",sep=""),row.names=F,quote=F)
+
+
