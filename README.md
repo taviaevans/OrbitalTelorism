@@ -20,11 +20,11 @@ which includes the variables of analysis
 which includes the variables adjusted for in each model
 [example of * .mods file]
 
-"
 Age
 Age+Sex
 Age+Sex+Height
-"
+
+
 
 #for VBM processing pipeline please see https://github.com/roshchupkin/FSfslVBM
 
