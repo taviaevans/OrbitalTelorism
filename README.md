@@ -18,11 +18,7 @@ which includes the determinants in your analysis
 which includes the variables of analysis
 * .mods
 which includes the variables adjusted for in each model
-[example of * .mods file]
-
-Age
-Age+Sex
-Age+Sex+Height
+[example of * .mods file is in dir]
 
 
 
