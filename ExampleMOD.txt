@@ -1,3 +1,0 @@
-Age
-Age+Sex
-Age+Sex+Height
