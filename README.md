@@ -1,6 +1,6 @@
 # OrbitalTelorism
-Processing and analysis of Orbital Teloirsm from MRI- used within # Cortex paper. 
-Please reference # when using this method. 
+Processing and analysis of Orbital Teloirsm from MRI- used within 2021 Pawlak et al. Cortex paper [https://doi.org/10.1016/j.cortex.2021.10.003]
+Please reference "Pawlak MA, Knol MJ, Vernooij MW, Ikram MA, Adams HH, Evans TE. Neural correlates of orbital telorism. Cortex. 2021 Dec 1;145:315-26" when using this method. 
 
 
 Download atlas folder to working dir.
